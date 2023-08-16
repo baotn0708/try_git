@@ -1,16 +1,10 @@
-with open('/mnt/data/agedetector_group_train.v1.0.txt', 'r', encoding='utf-8') as f:
-    train_data = f.readlines()
+# 1. Định nghĩa các hàm và lớp cần thiết
 
-with open('/mnt/data/test.txt', 'r', encoding='utf-8') as f:
-    test_data = f.readlines()
 # Preprocess the data
 def preprocess_data(data):
     labels = [line.split()[0][9:] for line in data]
     texts = [' '.join(line.split()[1:]) for line in data]
     return texts, labels
-
-train_texts, train_labels = preprocess_data(train_data)
-test_texts, test_labels = preprocess_data(test_data)
 
 # Define the Naive Bayes classifier with Laplace smoothing
 class NaiveBayesClassifier:
@@ -55,25 +49,49 @@ class NaiveBayesClassifier:
                         probs[label] += np.log(self.word_probs[label][word])
             predictions.append(max(probs, key=probs.get))
         return predictions
-    
-# Preprocess the data
-train_labels = [line.split()[0][9:] for line in train_data]
-train_texts = [' '.join(line.split()[1:]) for line in train_data]
 
-test_labels = [line.split()[0][9:] for line in test_data]
-test_texts = [' '.join(line.split()[1:]) for line in test_data]
-# Train the Naive Bayes model with Laplace smoothing
+# Custom evaluation metrics
+def accuracy(true_labels, predicted_labels):
+    correct_predictions = sum(a == b for a, b in zip(true_labels, predicted_labels))
+    return correct_predictions / len(true_labels)
+
+def classification_metrics(true_labels, predicted_labels):
+    labels = list(set(true_labels))
+    metrics = {}
+    
+    for label in labels:
+        tp = sum(y_true == label and y_pred == label for y_true, y_pred in zip(true_labels, predicted_labels))
+        fp = sum(y_true != label and y_pred == label for y_true, y_pred in zip(true_labels, predicted_labels))
+        fn = sum(y_true == label and y_pred != label for y_true, y_pred in zip(true_labels, predicted_labels))
+        
+        precision = tp / (tp + fp) if (tp + fp) != 0 else 0
+        recall = tp / (tp + fn) if (tp + fn) != 0 else 0
+        f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) != 0 else 0
+        
+        metrics[label] = {
+            "Precision": precision,
+            "Recall": recall,
+            "F1-Score": f1_score
+        }
+        
+    return metrics
+
+# 2. Tải và tiền xử lý dữ liệu
+with open('/mnt/data/agedetector_group_train.v1.0.txt', 'r', encoding='utf-8') as f:
+    train_data = f.readlines()
+with open('/mnt/data/test.txt', 'r', encoding='utf-8') as f:
+    test_data = f.readlines()
+
+train_texts, train_labels = preprocess_data(train_data)
+test_texts, test_labels = preprocess_data(test_data)
+
+# 3. Huấn luyện và dự đoán sử dụng phân loại Naive Bayes
 nb_custom = NaiveBayesClassifier(alpha=1)
 nb_custom.fit(train_texts, train_labels)
-
-# Predict on the test set
 test_preds_custom = nb_custom.predict(test_texts)
 
-# Evaluate the model
-def evaluate_model(true_labels, predicted_labels):
-    accuracy = sum(np.array(true_labels) == np.array(predicted_labels)) / len(true_labels)
-    report = classification_report(true_labels, predicted_labels)
-    return accuracy, report
+# 4. Đánh giá kết quả
+accuracy_val = accuracy(test_labels, test_preds_custom)
+classification_metrics_val = classification_metrics(test_labels, test_preds_custom)
 
-accuracy_custom, classification_rep_custom = evaluate_model(test_labels, test_preds_custom)
-accuracy_custom, classification_rep_custom
+accuracy_val, classification_metrics_val
