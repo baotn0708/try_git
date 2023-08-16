@@ -1,3 +1,8 @@
+with open('/mnt/data/agedetector_group_train.v1.0.txt', 'r', encoding='utf-8') as f:
+    train_data = f.readlines()
+
+with open('/mnt/data/test.txt', 'r', encoding='utf-8') as f:
+    test_data = f.readlines()
 # Preprocess the data
 def preprocess_data(data):
     labels = [line.split()[0][9:] for line in data]
@@ -50,11 +55,6 @@ class NaiveBayesClassifier:
                         probs[label] += np.log(self.word_probs[label][word])
             predictions.append(max(probs, key=probs.get))
         return predictions
-with open('/mnt/data/agedetector_group_train.v1.0.txt', 'r', encoding='utf-8') as f:
-    train_data = f.readlines()
-
-with open('/mnt/data/test.txt', 'r', encoding='utf-8') as f:
-    test_data = f.readlines()
     
 # Preprocess the data
 train_labels = [line.split()[0][9:] for line in train_data]
